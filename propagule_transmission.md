@@ -106,8 +106,6 @@ lcl <- group_by(dataH, Parasite.species)%>%
 tl.out <- left_join(tl.out, lcl)
 ```
 
-    ## Joining, by = "Parasite.species"
-
 Import host mass data (~20,000 species), compiled from a variety of sources, and then add host masses to the trophic link table.
 
 ``` r
@@ -208,8 +206,6 @@ ggplot(data = brose,
   scale_x_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3))
 ```
 
-    ## Warning: Removed 4399 rows containing missing values (geom_point).
-
 ![](propagule_transmission_files/figure-markdown_github/unnamed-chunk-12-1.png)
 
 The links with missing mass data nonetheless have consumer-resource mass ratios. Brose et al. say that these masses were calculated from length allometries, but I am unsure about how to back calculate masses, as the allometric relationships were not given. The links with missing masses show a wider spread in mass ratios, especially large ratios (i.e. big consumers, small resources). Thus, grazers or detritivores are probably overrepresented here.
@@ -272,10 +268,6 @@ ggplot(data = filter(plot.dat, trans.step=="food web"),
   scale_y_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3))
 ```
 
-    ## Warning: Removed 4216 rows containing missing values (geom_point).
-
-    ## Warning: Removed 2484 rows containing missing values (geom_point).
-
 ![](propagule_transmission_files/figure-markdown_github/unnamed-chunk-16-1.png)
 
 ``` r
@@ -300,10 +292,6 @@ ggplot(data = filter(plot.dat, trans.step=="food web"),
   scale_y_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3))
 ```
 
-    ## Warning: Removed 4216 rows containing missing values (geom_point).
-
-    ## Warning: Removed 1854 rows containing missing values (geom_point).
-
 ![](propagule_transmission_files/figure-markdown_github/unnamed-chunk-17-1.png)
 
 ``` r
@@ -327,10 +315,6 @@ ggplot(data = filter(plot.dat, trans.step=="food web"),
   scale_y_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3))
 ```
 
-    ## Warning: Removed 4216 rows containing missing values (geom_point).
-
-    ## Warning: Removed 15162 rows containing missing values (geom_point).
-
 ![](propagule_transmission_files/figure-markdown_github/unnamed-chunk-18-1.png)
 
 ``` r
@@ -346,11 +330,7 @@ lclvsprop <- left_join(dataH, host.size, by = c("Host.species" = "binomial"))%>%
   group_by(Parasite.species, Host.no)%>%
   summarize(host.mass = mean(body.mass, na.rm=T))%>% # calc avg host size for each parasite stage
   left_join(lcl) # add lcl
-```
 
-    ## Joining, by = "Parasite.species"
-
-``` r
 # sig neg correlation between life cycle length and 1st host mass
 summary(lm(lcl ~ log(host.mass), filter(lclvsprop, Host.no == 1)))
 ```
@@ -386,21 +366,13 @@ ggplot(filter(lclvsprop, Host.no == 1),
   labs(y = "Life cycle length", x = "1st host mass")
 ```
 
-    ## Warning: Removed 433 rows containing non-finite values (stat_smooth).
-
-    ## Warning: Removed 433 rows containing missing values (geom_point).
-
 ![](propagule_transmission_files/figure-markdown_github/unnamed-chunk-20-1.png)
 
 Propagules were consistently small. But maybe their size variation affects the type of first host. We can imagine larger propagules being more likely to be eaten by bigger consumers. Consistent with this, there is a significant positive correlation between propagule mass and 1st host mass.
 
 ``` r
 lclvsprop <- left_join(lclvsprop, dataL) # combine host size and propagule data
-```
 
-    ## Joining, by = "Parasite.species"
-
-``` r
 # sig pos correlation between propagule size and 1st host mass
 summary(lm(log(host.mass) ~ log(biovolume), filter(lclvsprop, Host.no == 1)))
 ```
@@ -435,9 +407,5 @@ ggplot(filter(lclvsprop, Host.no == 1),
   geom_smooth(method = 'lm', se = F, color = 'black') +
   labs(x = "Propagule mass", y = "1st host mass")
 ```
-
-    ## Warning: Removed 554 rows containing non-finite values (stat_smooth).
-
-    ## Warning: Removed 554 rows containing missing values (geom_point).
 
 ![](propagule_transmission_files/figure-markdown_github/unnamed-chunk-22-1.png)

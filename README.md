@@ -1,3 +1,3 @@
 # The relationship between parasite propagules and their hosts
 
-Each folder contains a md file that is a readable report of the analyses.
+This repository contains several data files that are used to analyze how parasite propagules fit into food webs. The goal of the analysis is to try to understand how parasite life cycles evolved, and more specifically the utility of first hosts in the life cycle. The data files include a life cycle database, a collation of host body masses, and a database of food web trophic links. The readable analysis is found in the md file.
