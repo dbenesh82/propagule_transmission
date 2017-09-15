@@ -9,6 +9,7 @@ Parasite propagule transmission
 library(dplyr)
 library(ggplot2)
 library(tidyr)
+library(RColorBrewer)
 
 options(stringsAsFactors = FALSE) #never have species lists as factors; always as character vectors
 
@@ -253,17 +254,18 @@ theme.o <- theme_update(axis.text = element_text(colour="black", size = 15),
 Now, we'll create a series of plots with parasite data overlaid on the food web data. The basic plot is consumer/predator size on the y-axis and resource/prey size on the x-axis. First, we plot links where the parasite propagule is transmitted to the 1st host. Parasite propagules are tiny, but they infect just about anything; they cover 10 orders of magnitude on the y-axis!). The smallest ones overlap the food web data well.
 
 ``` r
+reds <- brewer.pal(9, 'Reds')[6]
 ggplot(data = filter(plot.dat, trans.step=="food web"),
        aes(x = log10(res.mass), y = log10(cons.mass))) +
   geom_point(color = "gray", alpha = 0.2) +
   labs(x = "\nLog(prey/propagule mass)", y = "Log(predator/1st host mass)\n") +
   geom_point(data = filter(plot.dat, trans.step=="propagule to 1st host"), 
              aes(x = log10(res.mass), y = log10(cons.mass)),
-             color = 'red', alpha = 0.2) +
+             color = reds, alpha = 0.2) +
   annotate("text", x = 2.75, y = -3.75, label = "Food web trophic links\n Brose et al. 2006",
            size = 6, color = "darkgray") +
   annotate("text", x = 2.75, y = -5.5, label = "Propagule to 1st host", 
-           size = 6, color = "red") +
+           size = 6, color = reds) +
   scale_x_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3)) +
   scale_y_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3))
 ```
@@ -274,25 +276,52 @@ ggplot(data = filter(plot.dat, trans.step=="food web"),
 #export 700 x 500 px as svg; change color of part of axis titles
 ```
 
+Let's make a second version of the plot, but separate simple and complex life cycles (i.e. parasites that have one host or more than one host in their life cycle). It is clear that worms with simple cycles tend to have bigger 1st hosts.
+
+``` r
+plot.dat <- mutate(plot.dat, lcl.cat = if_else(lcl > 1, "complex", "simple")) 
+reds <- brewer.pal(9, 'Reds')[c(4,7)]
+
+ggplot(data = filter(plot.dat, trans.step=="food web"),
+       aes(x = log10(res.mass), y = log10(cons.mass))) +
+  geom_point(color = "gray", alpha = 0.2) +
+  labs(x = "\nLog(prey/propagule mass)", y = "Log(predator/1st host mass)\n") +
+  geom_point(data = filter(plot.dat, trans.step == "propagule to 1st host"), 
+             aes(x = log10(res.mass), y = log10(cons.mass), color = lcl.cat),
+             alpha = 0.5) +
+  scale_color_manual(values = reds) + guides(color=FALSE) +
+  annotate("text", x = 2.75, y = -2.75, label = "Food web trophic links\n Brose et al. 2006",
+           size = 6, color = "darkgray") +
+  annotate("text", x = 2.75, y = -4.5, label = "Propagule to 1st host (simple)", 
+           size = 6, color = reds[2]) +
+  annotate("text", x = 2.75, y = -5.75, label = "Propagule to 1st host (complex)", 
+           size = 6, color = reds[1]) +
+  scale_x_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3)) +
+  scale_y_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3))
+```
+
+![](propagule_transmission_files/figure-markdown_github/unnamed-chunk-17-1.png)
+
 Now imagine that complex life cycle parasites skipped their first hosts, i.e. their propagules are consumed by the second hosts instead. Now there is much less overlap between the parasite and food web data, indicating that parasite propagules are usually too small to be considered a normal food item for their hosts.
 
 ``` r
+blues <- brewer.pal(9, 'Blues')[6]
 ggplot(data = filter(plot.dat, trans.step=="food web"),
        aes(x = log10(res.mass), y = log10(cons.mass))) +
   geom_point(color = "gray", alpha = 0.2) +
   labs(x = "\nLog(prey/propagule mass)", y = "Log(predator/1st host mass)\n") +
   geom_point(data = filter(plot.dat, trans.step=="propagule to 2nd host"), 
              aes(x = log10(res.mass), y = log10(cons.mass)),
-             color = 'blue', alpha = 0.2) +
+             color = blues, alpha = 0.2) +
   annotate("text", x = 2.75, y = -3.75, label = "Food web trophic links\n Brose et al. 2006",
            size = 6, color = "darkgray") +
   annotate("text", x = 2.75, y = -5.5, label = "Propagule to 2nd host", 
-           size = 6, color = "blue") +
+           size = 6, color = blues) +
   scale_x_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3)) +
   scale_y_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3))
 ```
 
-![](propagule_transmission_files/figure-markdown_github/unnamed-chunk-17-1.png)
+![](propagule_transmission_files/figure-markdown_github/unnamed-chunk-18-1.png)
 
 ``` r
 #export 700 x 500 px as svg; change color of part of axis titles
@@ -301,21 +330,22 @@ ggplot(data = filter(plot.dat, trans.step=="food web"),
 The role of the first host is not only to eat the propagule, but also to transmit the parasite to the 2nd host. Thus, we expect trophic links of the first host to the second host to fall solidly within the range of the food web data. That is mostly the case, but there are also some cases with small 1sts hosts being transmitted to especially large 2nd hosts.
 
 ``` r
+purp <- brewer.pal(9, 'Purples')[7]
 ggplot(data = filter(plot.dat, trans.step=="food web"),
        aes(x = log10(res.mass), y = log10(cons.mass))) +
   geom_point(color = "gray", alpha = 0.2) +
   labs(x = "\nLog(prey/propagule mass)", y = "Log(predator/2nd host mass)\n") +
   geom_point(data = filter(plot.dat, trans.step=="1st host to 2nd host"), 
-             color = "purple", alpha = 0.2) +
+             color = purp, alpha = 0.2) +
   annotate("text", x = 2.75, y = -3.75, label = "Food web trophic links\n Brose et al. 2006",
            size = 6, color = "darkgray") +
   annotate("text", x = 2.75, y = -5.5, label = "1st host to 2nd host", 
-           size = 6, color = "purple") +
+           size = 6, color = purp) +
   scale_x_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3)) +
   scale_y_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3))
 ```
 
-![](propagule_transmission_files/figure-markdown_github/unnamed-chunk-18-1.png)
+![](propagule_transmission_files/figure-markdown_github/unnamed-chunk-19-1.png)
 
 ``` r
 #export 700 x 500 px as svg; change color of part of axis titles
@@ -366,7 +396,7 @@ ggplot(filter(lclvsprop, Host.no == 1),
   labs(y = "Life cycle length", x = "1st host mass")
 ```
 
-![](propagule_transmission_files/figure-markdown_github/unnamed-chunk-20-1.png)
+![](propagule_transmission_files/figure-markdown_github/unnamed-chunk-21-1.png)
 
 Propagules were consistently small. But maybe their size variation affects the type of first host. We can imagine larger propagules being more likely to be eaten by bigger consumers. Consistent with this, there is a significant positive correlation between propagule mass and 1st host mass.
 
@@ -408,4 +438,27 @@ ggplot(filter(lclvsprop, Host.no == 1),
   labs(x = "Propagule mass", y = "1st host mass")
 ```
 
-![](propagule_transmission_files/figure-markdown_github/unnamed-chunk-22-1.png)
+![](propagule_transmission_files/figure-markdown_github/unnamed-chunk-23-1.png)
+
+There are 973 parasite species in the database. It is worth checking how many have 1st host size data and propagule size data. About 44% lack host size data.
+
+``` r
+lclvsprop2 <- filter(lclvsprop, Host.no == 1)%>%
+  mutate(missing_hostsize = if_else(is.na(host.mass), 'no 1st host size', '1st host size available'),
+         missing_propsize = if_else(is.na(biovolume), 'no propagule size', 'propagule size available'))
+table(lclvsprop2$missing_hostsize)
+```
+
+    ## 
+    ## 1st host size available        no 1st host size 
+    ##                     540                     433
+
+Only 27% lack propagule size data.
+
+``` r
+table(lclvsprop2$missing_propsize)
+```
+
+    ## 
+    ##        no propagule size propagule size available 
+    ##                      263                      710

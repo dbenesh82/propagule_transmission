@@ -257,7 +257,7 @@ reds <- brewer.pal(9, 'Reds')[6]
 ggplot(data = filter(plot.dat, trans.step=="food web"),
        aes(x = log10(res.mass), y = log10(cons.mass))) +
   geom_point(color = "gray", alpha = 0.2) +
-  labs(x = "\nLog(prey/propagule mass)", y = "Log(predator/1st host mass)\n") +
+  labs(x = "\nLog(resource/propagule mass)", y = "Log(consumer/host mass)\n") +
   geom_point(data = filter(plot.dat, trans.step=="propagule to 1st host"), 
              aes(x = log10(res.mass), y = log10(cons.mass)),
              color = reds, alpha = 0.2) +
@@ -280,7 +280,7 @@ reds <- brewer.pal(9, 'Reds')[c(4,7)]
 ggplot(data = filter(plot.dat, trans.step=="food web"),
        aes(x = log10(res.mass), y = log10(cons.mass))) +
   geom_point(color = "gray", alpha = 0.2) +
-  labs(x = "\nLog(prey/propagule mass)", y = "Log(predator/1st host mass)\n") +
+  labs(x = "\nLog(resource/propagule mass)", y = "Log(consumer/host mass)\n") +
   geom_point(data = filter(plot.dat, trans.step == "propagule to 1st host"), 
              aes(x = log10(res.mass), y = log10(cons.mass), color = lcl.cat),
              alpha = 0.5) +
@@ -302,7 +302,7 @@ blues <- brewer.pal(9, 'Blues')[6]
 ggplot(data = filter(plot.dat, trans.step=="food web"),
        aes(x = log10(res.mass), y = log10(cons.mass))) +
   geom_point(color = "gray", alpha = 0.2) +
-  labs(x = "\nLog(prey/propagule mass)", y = "Log(predator/1st host mass)\n") +
+  labs(x = "\nLog(resource/propagule mass)", y = "Log(consumer/host mass)\n") +
   geom_point(data = filter(plot.dat, trans.step=="propagule to 2nd host"), 
              aes(x = log10(res.mass), y = log10(cons.mass)),
              color = blues, alpha = 0.2) +
@@ -323,7 +323,7 @@ purp <- brewer.pal(9, 'Purples')[7]
 ggplot(data = filter(plot.dat, trans.step=="food web"),
        aes(x = log10(res.mass), y = log10(cons.mass))) +
   geom_point(color = "gray", alpha = 0.2) +
-  labs(x = "\nLog(prey/propagule mass)", y = "Log(predator/2nd host mass)\n") +
+  labs(x = "\nLog(resource/propagule mass)", y = "Log(consumer/host mass)\n") +
   geom_point(data = filter(plot.dat, trans.step=="1st host to 2nd host"), 
              color = purp, alpha = 0.2) +
   annotate("text", x = 2.75, y = -3.75, label = "Food web trophic links\n Brose et al. 2006",
