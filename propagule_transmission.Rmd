@@ -379,4 +379,17 @@ ggplot(filter(lclvsprop, Host.no == 1),
   labs(x = "Propagule mass", y = "1st host mass")
 ```
 
-HOW MUCH DATA IS MISSING?!?!?
+There are 973 parasite species in the database. It is worth checking how many have 1st host size data and propagule size data. About 44% lack host size data.
+
+```{r}
+lclvsprop2 <- filter(lclvsprop, Host.no == 1)%>%
+  mutate(missing_hostsize = if_else(is.na(host.mass), 'no 1st host size', '1st host size available'),
+         missing_propsize = if_else(is.na(biovolume), 'no propagule size', 'propagule size available'))
+table(lclvsprop2$missing_hostsize)
+```
+
+Only 27% lack propagule size data.
+
+```{r}
+table(lclvsprop2$missing_propsize)
+```
