@@ -16,74 +16,26 @@ library(RColorBrewer)
 
 options(stringsAsFactors = FALSE) #never have species lists as factors; always as character vectors
 
+# theme for plots
+theme.o <- theme_update(axis.text = element_text(colour="black", size = 15),
+                        axis.title = element_text(colour="black", size = 18, face = "bold", lineheight=0.25),
+                        axis.ticks = element_line(colour="black"),
+                        panel.border = element_rect(colour = "black",fill=NA),
+                        panel.grid.minor=element_blank(),
+                        panel.grid.major=element_line(color="gray",linetype = "dotted"),
+                        panel.background= element_rect(fill = NA))
+
 #import host data
-setwd("C:/Users/phosp/OneDrive/Documents/Benesh/Proposals_ideas/DFG_eigenestelle/prelim_analyses/propagule_transmission")
-dataH <- read.csv(file="CLC_database_hosts.csv", header = TRUE, sep=",")
+dataH <- read.csv(file="data/CLC_database_hosts.csv", header = TRUE, sep=",")
 ```
 
-For each parasite species, there is a list of hosts. We need to rearrange the host lists as trophic links exploited by (or potentially exploited by) the parasite. For example, all the host species known to be 1st hosts for parasite A may be consumed by all the 2nd hosts of parasite A. The next code blocks create functions to do this on a species by species basis. The first function creates all the potential trophic links exploited by a parasite. The next two functions label the links, e.g. "propagule to 1st host", "1st host to 2nd host", etc.
-
-```{r, message=FALSE, warning=TRUE}
-make.trophic.links <- function(species){
-  # returns all potential trophic links for a parasite species; every higher level host eats every lower level host
-  # start by filtering hosts for given parasite species
-  sp<-filter(dataH, Parasite.species == species)%>%
-    select(Host.species, Host.no, Facultative)
-  
-  # make all possible links
-  links<-expand.grid(sp$Host.sp, c(sp$Host.sp, 'propagule'))
-  names(links)<-c('cons','res')
-  links <- mutate_all(links, funs(as.character(.)))
-  
-  # label the hosts as first host, second, etc.
-  links <- left_join(links, sp, by = c("cons" = "Host.species"))
-  links <-left_join(links, sp, by = c("res" = "Host.species"))
-  names(links) <- c("cons", "res", "cons.host.no", "cons.fac", "res.host.no", "res.fac")
-  links$res.host.no[is.na(links$res.host.no)] <- 0
-  
-  # eliminate links where lower level hosts consume higher level hosts, e.g. 1st host consumes 2nd host
-  links <- filter(links, cons.host.no > res.host.no)
-  
-  return(links)
-}
-```
-
-```{r}
-link.labeller <- function(num){
-  # function to give hosts a name instead of number
-  if(num == 0) {
-    "propagule"
-  } else if (num == 1) {
-    "1st host"
-  } else if (num == 2) {
-    "2nd host"
-  } else if (num == 3) {
-    "3rd host"
-  } else if (num == 4) {
-    "4th host"
-  } else if (num == 5) {
-    "5th host"
-  }
-}
-```
+For each parasite species, there is a list of hosts. We need to rearrange the host lists as trophic links exploited by (or potentially exploited by) the parasite. For example, all the host species known to be 1st hosts for parasite A may be consumed by all the 2nd hosts of parasite A. We load a few functions to do this. On a species by species basis, they create and label the potential trophic links exploited by a parasite, e.g. "propagule to 1st host", "1st host to 2nd host", etc.
 
 ```{r, message=FALSE, warning=FALSE}
-label.trophic.links <- function(species) {
-  # make links df for given species
-  links <- make.trophic.links(species)
-  
-  # create labels for consumer and resource host
-  lab1 <- sapply(links$cons.host.no, link.labeller)
-  lab2 <- sapply(links$res.host.no, link.labeller)
-  
-  # combine labels and add them to df
-  links$trans.step <- paste(lab2, "to", lab1)
-  
-  return(links)
-}
+source("src/make_trophic_links_functions.R")
 ```
 
-Now we loop through all the parasite species, create the trophic links in the life cycle, and then collate them together into a large trophic links data table.
+We loop through all the parasite species, create the trophic links in the life cycle, and then collate them together into a large trophic links data table.
 
 ```{r, message=FALSE, warning=FALSE}
 # loop through parasite species to get trophic links dataset
@@ -99,7 +51,7 @@ for(i in seq_along(para.sp)){
     tl.out <- rbind(tl.out,tl.out2)
   }
 }
-rm(para.sp, i, tl.out2)
+rm(para.sp, i, tl.out2) # unneeded after loop
 ```
 
 Add parasite life cycle length to trophic links table.
@@ -114,7 +66,7 @@ Import host mass data (~20,000 species), compiled from a variety of sources, and
 
 ```{r, message=FALSE, warning=FALSE}
 # load size data
-host.size <- read.csv(file="collated_host_mass_data.csv", header = TRUE, sep=",")
+host.size <- read.csv(file="data/collated_host_mass_data.csv", header = TRUE, sep=",")
 
 # host size either a length or a mass; restrict to just masses
 host.size <- filter(host.size, !is.na(body.mass))%>%
@@ -130,31 +82,26 @@ tl.out$res.mass<-
   host.size$body.mass[match(tl.out$res, host.size$binomial)]
 ```
 
-The trophic link table also includes 'parasite propagule to host consumer' entries, and we want to add parasite propagule masses to these trophic links. We import the parasite body size data from the life cycle database, restrict it to the propagules, and then convert lengths and widths to biovolume. Here the assumption is that biovolume (mm3) can be converted to mass (mg) assuming a tissue density of 1.1 mg/mm3. This is then converted to g, as that is the unit used in the host mass data.
+The trophic link table also includes 'parasite propagule to host consumer' entries, and we want to add parasite propagule masses to these trophic links. We import the parasite body size data from the life cycle database, restrict it to the propagules, and then convert lengths and widths to biovolume. Here the assumption is that biovolume (mm^3^) can be converted to mass (mg) assuming a tissue density of 1.1 mg/mm^3^. This is then converted to g, as that is the unit used in the host mass data.
 
 ```{r, message=FALSE, warning=FALSE}
 # load helminth life history data
-dataL <- read.csv(file="CLC_database_lifehistory.csv", header = TRUE, sep=",")
+dataL <- read.csv(file="data/CLC_database_lifehistory.csv", header = TRUE, sep=",")
 
 # filter to just propagule stages
 dataL <- filter(dataL, Host.no == 0)
 
 # calculate a biovolume (mm3) for worm stages from lengths, widths, and shapes
-  dataL$biovolume <- NA
-  dataL$biovolume <- as.numeric(dataL$biovolume)
-  
-  # if shape is cylinder, elongate, whip, calculate volume as a cylinder
-  sv <- which(dataL$Shape == "cylinder" | dataL$Shape == "thread-like" | dataL$Shape == "whip")
-  dataL$biovolume[sv] <- 
-    pi * (dataL$Width[sv]/2)^2 * dataL$Length[sv]
-  
-  # if shape is coiled, sphere, ellipsoid, calculate volume as an ellipsoid
-  sv <- which(dataL$Shape == "coiled" | dataL$Shape == "sphere" | dataL$Shape == "ellipsoid")
-  dataL$biovolume[sv] <-
-    4/3 * pi * dataL$Length[sv]/2 * dataL$Width[sv]/4
+dataL <- mutate(dataL, biovolume = 
+                  if_else(Shape %in% c("cylinder", "thread-like", "whip"), 
+                          pi * (Width/2)^2 * Length, # calculate volume as a cylinder
+                          if_else(Shape %in% c("coiled", "sphere", "ellipsoid"),
+                                  4/3 * pi * Length/2 * Width/4, # calculate volume as a ellipsoid
+                                  Length * Width # calculate volume as area for remaining ribbon, leaf shapes
+                                  )),
+                biovolume = biovolume * 1.1/1000) # covert to biomass with assumed 1.1. g/cm3 tissue density 
 
-dataL <- mutate(dataL, biovolume = biovolume * .0011)%>% # convert mm3 to g (assumes tissue density of 1.1 g/cm3)
-  select(Parasite.species, Stage, Egg.hatch, biovolume)
+dataL <- select(dataL, Parasite.species, Stage, Egg.hatch, biovolume)
 ```
 
 Several measurements may be given for a parasite propagule, such as the egg, embryo, or hatched larave. We should extract the propagules measurments respresenting what is ingested by the consumer. This is the egg if it does not hatch or the free larva if it does hatch.
@@ -198,7 +145,7 @@ tl.out$res.mass[which(tl.out$res=='propagule')] <- eggies
 To compare how parasite-exploited trophic links compare to the normal links in food-webs, we import a database of food web links [(Brose et al. 2006)](http://onlinelibrary.wiley.com/doi/10.1890/0012-9658(2006)87[2411:CBRINF]2.0.CO;2/full). The data is mostly predator-prey links, and quite a lot of mass data is missing (4400 of 16800 links, ~ 26%)
 
 ```{r, message=FALSE, warning=FALSE}
-brose<-read.csv(file="Brose_bodysizes_2008_DB.csv", header = TRUE,sep = ",")
+brose<-read.csv(file="data/Brose_bodysizes_2008_DB.csv", header = TRUE,sep = ",")
 
 # plot data to show different kinds of trophic interactions
 ggplot(data = brose,
@@ -217,7 +164,9 @@ The links with missing mass data nonetheless have consumer-resource mass ratios.
 brose <- mutate(brose, missing_mass = if_else(is.na(Mean.mass..g..resource), 1, 
                                               if_else(is.na(Mean.mass..g..consumer), 1, 0)))
 
-ggplot(brose, aes(x = factor(missing_mass), y = log10(Consumer.resource.body.mass.ratio))) + geom_boxplot()
+ggplot(brose, aes(x = factor(missing_mass), y = log10(Consumer.resource.body.mass.ratio))) +
+  geom_boxplot() +
+  labs(x = "Missing, 1 = yes", y = "Log(Cons/Res Mass Ratio")
 ```
 
 For the sake of simplicity, we'll ignore the missing mass data for now, but we should keep it in mind, and maybe consider larger [datasets](http://www.globalbioticinteractions.org/about.html) in the future.
@@ -238,18 +187,6 @@ plot.dat <- select(tl.out, Parasite.species, cons.mass, res.mass, trans.step, lc
 plot.dat <- rbind(plot.dat, brose)
 ```
 
-Create a theme for plots.
-
-```{r, message=FALSE, warning=FALSE}
-theme.o <- theme_update(axis.text = element_text(colour="black", size = 15),
-                        axis.title = element_text(colour="black", size = 18, face = "bold", lineheight=0.25),
-                        axis.ticks = element_line(colour="black"),
-                        panel.border = element_rect(colour = "black",fill=NA),
-                        panel.grid.minor=element_blank(),
-                        panel.grid.major=element_line(color="gray",linetype = "dotted"),
-                        panel.background= element_rect(fill = NA))
-```
-
 Now, we'll create a series of plots with parasite data overlaid on the food web data. The basic plot is consumer/predator size on the y-axis and resource/prey size on the x-axis. First, we plot links where the parasite propagule is transmitted to the 1st host. Parasite propagules are tiny, but they infect just about anything; they cover 10 orders of magnitude on the y-axis! The smallest ones overlap the food web data well.
 
 ```{r, message=FALSE, warning=FALSE}
@@ -267,8 +204,6 @@ ggplot(data = filter(plot.dat, trans.step=="food web"),
            size = 6, color = reds) +
   scale_x_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3)) +
   scale_y_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3))
-
-#export 700 x 500 px as svg; change color of part of axis titles
 ```
 
 Let's make a second version of the plot, but separate simple and complex life cycles (i.e. parasites that have one host vs multiple hosts in their life cycle). Clearly, worms with simple cycles tend to have bigger 1st hosts.
@@ -277,8 +212,8 @@ Let's make a second version of the plot, but separate simple and complex life cy
 plot.dat <- mutate(plot.dat, lcl.cat = if_else(lcl > 1, "complex", "simple")) 
 reds <- brewer.pal(9, 'Reds')[c(4,7)]
 
-ggplot(data = filter(plot.dat, trans.step=="food web"),
-       aes(x = log10(res.mass), y = log10(cons.mass))) +
+outfig <- ggplot(data = filter(plot.dat, trans.step=="food web"),
+                 aes(x = log10(res.mass), y = log10(cons.mass))) +
   geom_point(color = "gray", alpha = 0.2) +
   labs(x = "\nLog(resource/propagule mass)", y = "Log(consumer/host mass)\n") +
   geom_point(data = filter(plot.dat, trans.step == "propagule to 1st host"), 
@@ -289,18 +224,23 @@ ggplot(data = filter(plot.dat, trans.step=="food web"),
            size = 6, color = "darkgray") +
   annotate("text", x = 2.75, y = -4.5, label = "Propagule to 1st host (simple)", 
            size = 6, color = reds[2]) +
-  annotate("text", x = 2.75, y = -5.75, label = "Propagule to 1st host (complex)", 
+  annotate("text", x = 2.5, y = -5.75, label = "Propagule to 1st host (complex)", 
            size = 6, color = reds[1]) +
   scale_x_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3)) +
   scale_y_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3))
+outfig
+
+# save svg and png of fig for a word doc; add (A) for paneling, change color of axis text
+ggsave(filename = "figs/prop_to_1sthost_foodweb.png", width = 7, height = 5, units = "in")
+ggsave(filename = "figs/prop_to_1sthost_foodweb.svg", width = 7, height = 5, units = "in")
 ```
 
 Now imagine that complex life cycle parasites skipped their first hosts, i.e. their propagules are consumed by the second hosts instead. How likely is this? Now there is much less overlap between parasite and food web data. This indicates that parasite propagules are usually too small to be considered a normal food item for the second hosts in the life cycle, and this indirectly supports the idea that transmission to the first host is higher than to the second host. Stated in another way, the first host reduces the mortality of the propagule.
 
 ```{r, message=FALSE, warning=FALSE}
 blues <- brewer.pal(9, 'Blues')[6]
-ggplot(data = filter(plot.dat, trans.step=="food web"),
-       aes(x = log10(res.mass), y = log10(cons.mass))) +
+outfig <- ggplot(data = filter(plot.dat, trans.step=="food web"),
+                 aes(x = log10(res.mass), y = log10(cons.mass))) +
   geom_point(color = "gray", alpha = 0.2) +
   labs(x = "\nLog(resource/propagule mass)", y = "Log(consumer/host mass)\n") +
   geom_point(data = filter(plot.dat, trans.step=="propagule to 2nd host"), 
@@ -312,8 +252,11 @@ ggplot(data = filter(plot.dat, trans.step=="food web"),
            size = 6, color = blues) +
   scale_x_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3)) +
   scale_y_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3))
-  
-#export 700 x 500 px as svg; change color of part of axis titles
+outfig
+
+# save svg and png of fig for a word doc; add (B) for paneling, change color of axis text
+ggsave(filename = "figs/prop_to_2ndhost_foodweb.png", width = 7, height = 5, units = "in")
+ggsave(filename = "figs/prop_to_2ndhost_foodweb.svg", width = 7, height = 5, units = "in")
 ```
 
 The role of the first host is not only to eat the propagule, but also to transmit the parasite to the 2nd host. Thus, we expect trophic links of the first host to the second host to fall solidly within the range of the food web data. That is mostly the case, but there are also some cases with small 1sts hosts being transmitted to especially large 2nd hosts.
@@ -332,8 +275,6 @@ ggplot(data = filter(plot.dat, trans.step=="food web"),
            size = 6, color = purp) +
   scale_x_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3)) +
   scale_y_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3))
-
-#export 700 x 500 px as svg; change color of part of axis titles
 ```
 
 These plots are sufficient for now, but they might be improved by changing the food web data to a heat map or a contour plot.
@@ -353,11 +294,15 @@ summary(lm(lcl ~ log(host.mass), filter(lclvsprop, Host.no == 1)))
 Then we visualize the correlation. It is clearly negative, although for a given life cycle length, first host size can vary substantially.
 
 ```{r, message=FALSE, warning=FALSE}
-ggplot(filter(lclvsprop, Host.no == 1),
-       aes(x = log10(host.mass), y = lcl)) +
+outfig <- ggplot(filter(lclvsprop, Host.no == 1),
+                 aes(x = log10(host.mass), y = lcl)) +
   geom_point(alpha = 0.2) +
-  geom_smooth(method = 'lm', se = F, color = 'black') +
+  geom_smooth(method = 'lm', se = F, color = 'dark gray') +
   labs(y = "Life cycle length", x = "1st host mass")
+outfig
+
+# save this for a word doc
+ggsave(filename = "figs/lcl_vs_1hostmass.png", width = 5, height = 4.5, units = "in")
 ```
 
 Presumably, parasites adapt to their life cycles and hosts. Thus, although parasite propagules are consistently small, maybe their size correlates with the type of first host. For example, perhaps larger propagules are more likely to be eaten by bigger consumers. Consistent with this, there is a significant positive correlation between propagule mass and 1st host mass.
@@ -375,13 +320,13 @@ When we visualize the correlation, though, we see that it is weak. Parasite prop
 ggplot(filter(lclvsprop, Host.no == 1),
        aes(x = log10(biovolume), y = log10(host.mass))) +
   geom_point(alpha = 0.2) +
-  geom_smooth(method = 'lm', se = F, color = 'black') +
+  geom_smooth(method = 'lm', se = F, color = 'dark gray') +
   labs(x = "Propagule mass", y = "1st host mass")
 ```
 
 There are 973 parasite species in the life cycle database. It is worth checking how many have 1st host size data and propagule size data. About 44% lack host size data.
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 lclvsprop2 <- filter(lclvsprop, Host.no == 1)%>%
   mutate(missing_hostsize = if_else(is.na(host.mass), 'no 1st host size', '1st host size available'),
          missing_propsize = if_else(is.na(biovolume), 'no propagule size', 'propagule size available'))
@@ -392,6 +337,6 @@ As vertebrate body sizes are more readily available than invertebrate sizes, it 
 
 Less propagule size data is missing. Only 27% of species lack propagule size data. The presence or absence of propagule sizes is presumably randomly distributed, because reporting these data (or not) probably does not strongly depend on propagule size.
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 table(lclvsprop2$missing_propsize)
 ```
