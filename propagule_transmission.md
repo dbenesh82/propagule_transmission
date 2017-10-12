@@ -242,7 +242,7 @@ ggsave(filename = "figs/prop_to_1sthost_foodweb.png", width = 7, height = 5, uni
 ggsave(filename = "figs/prop_to_1sthost_foodweb.svg", width = 7, height = 5, units = "in")
 ```
 
-Now imagine that complex life cycle parasites skipped their first hosts, i.e. their propagules are consumed by the second hosts instead. How likely is this? Now there is much less overlap between parasite and food web data. This indicates that parasite propagules are usually too small to be considered a normal food item for the second hosts in the life cycle, and this indirectly supports the idea that transmission to the first host is higher than to the second host. Stated in another way, the first host reduces the mortality of the propagule.
+Now imagine that complex life cycle parasites skipped their first hosts, i.e. their propagules are consumed by the second hosts instead. How likely is this? When we make a similar plot to the previous one, we see there is much less overlap between parasite and food web data. This indicates that parasite propagules are usually too small to be considered a normal food item for the second hosts in a complex life cycle, and this indirectly supports the idea that transmission to the first host is higher than to the second host. Stated in another way, the first host reduces the mortality of the propagule.
 
 ``` r
 blues <- brewer.pal(9, 'Blues')[6]
