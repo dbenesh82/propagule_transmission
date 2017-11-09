@@ -199,7 +199,7 @@ ggplot(data = filter(plot.dat, trans.step=="food web"),
   geom_point(data = filter(plot.dat, trans.step=="propagule to 1st host"), 
              aes(x = log10(res.mass), y = log10(cons.mass)),
              color = reds, alpha = 0.2) +
-  annotate("text", x = 2.75, y = -3.75, label = "Food web trophic links\n Brose et al. 2006",
+  annotate("text", x = 2.75, y = -3.75, label = "Food web trophic links",
            size = 6, color = "darkgray") +
   annotate("text", x = 2.75, y = -5.5, label = "Propagule to 1st host", 
            size = 6, color = reds) +
@@ -223,7 +223,7 @@ outfig <- ggplot(data = filter(plot.dat, trans.step=="food web"),
              aes(x = log10(res.mass), y = log10(cons.mass), color = lcl.cat),
              alpha = 0.5) +
   scale_color_manual(values = reds) + guides(color=FALSE) +
-  annotate("text", x = 2.75, y = -2.75, label = "Food web trophic links\n Brose et al. 2006",
+  annotate("text", x = 2.75, y = -3.25, label = "Food web trophic links",
            size = 6, color = "darkgray") +
   annotate("text", x = 2.75, y = -4.5, label = "Propagule to 1st host (simple)", 
            size = 6, color = reds[2]) +
@@ -253,9 +253,9 @@ outfig <- ggplot(data = filter(plot.dat, trans.step=="food web"),
   geom_point(data = filter(plot.dat, trans.step=="propagule to 2nd host"), 
              aes(x = log10(res.mass), y = log10(cons.mass)),
              color = blues, alpha = 0.2) +
-  annotate("text", x = 2.75, y = -3.75, label = "Food web trophic links\n Brose et al. 2006",
+  annotate("text", x = 2.75, y = -3.25, label = "Food web trophic links",
            size = 6, color = "darkgray") +
-  annotate("text", x = 2.75, y = -5.5, label = "Propagule to 2nd host", 
+  annotate("text", x = 2.75, y = -4.5, label = "Propagule to 2nd host", 
            size = 6, color = blues) +
   scale_x_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3)) +
   scale_y_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3))
@@ -280,9 +280,9 @@ ggplot(data = filter(plot.dat, trans.step=="food web"),
   labs(x = "\nLog(resource/propagule mass)", y = "Log(consumer/host mass)\n") +
   geom_point(data = filter(plot.dat, trans.step=="1st host to 2nd host"), 
              color = purp, alpha = 0.2) +
-  annotate("text", x = 2.75, y = -3.75, label = "Food web trophic links\n Brose et al. 2006",
+  annotate("text", x = 2.75, y = -3.25, label = "Food web trophic links",
            size = 6, color = "darkgray") +
-  annotate("text", x = 2.75, y = -5.5, label = "1st host to 2nd host", 
+  annotate("text", x = 2.75, y = -4.5, label = "1st host to 2nd host", 
            size = 6, color = purp) +
   scale_x_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3)) +
   scale_y_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3))
