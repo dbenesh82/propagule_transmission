@@ -409,3 +409,33 @@ table(lclvsprop2$missing_propsize)
     ## 
     ##        no propagule size propagule size available 
     ##                      263                      710
+
+Here's maybe another way to present the main results. First, show that mass of the first host differs depending on whether parasites have a simple or complex life cycle. Also, show that the second hosts in a complex cycle are larger than the first host.
+
+``` r
+lclvsprop3 <- filter(lclvsprop, Host.no < 3)%>%
+  mutate(cycle = if_else(lcl < 2, "simple", "complex"))%>%
+  mutate(cycle2 = if_else(cycle == 'simple', "1st host (simple)",
+                          if_else(Host.no == 1, "1st host (complex)", "2nd host (complex)")))
+
+ggplot(lclvsprop3, aes(x = cycle2, y = log10(host.mass))) + 
+  geom_boxplot(outlier.color = "white", width = 0.9) +
+  geom_jitter(width = 0.2, color = "red", alpha = 0.2) +
+  theme(axis.title.x = element_blank()) +
+  labs(y = "Log Host Mass (g)")
+```
+
+![](propagule_transmission_files/figure-markdown_github-ascii_identifiers/unnamed-chunk-23-1.png)
+
+Also, need to show that propagule size does not differ between simple and complex life cycle parasites. These two graphs are arguably simpler, because they do not invoke food web data. However, that is also a weakness, as they still require background knowledge in ecology to interpret.
+
+``` r
+ggplot(filter(lclvsprop3, Host.no == 1),
+       aes(x = cycle, y = log10(biovolume))) +
+  geom_boxplot(outlier.color = "white", width = 0.9) +
+  geom_jitter(width = 0.2, color = "red", alpha = 0.2) +
+  theme(axis.title.x = element_blank()) +
+  labs(y = "Log Propagule Mass (g)")
+```
+
+![](propagule_transmission_files/figure-markdown_github-ascii_identifiers/unnamed-chunk-24-1.png)
