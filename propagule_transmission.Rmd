@@ -357,13 +357,16 @@ cons_size95 <- filter(brose, res.mass > prop_size95[1], res.mass < prop_size95[2
 cons_size95 <- quantile(cons_size95$cons.mass, probs = c(0.025, 0.95))
 
 # add a rectangle to the boxplot depicting where propagule consumption is realistic
-outfig +
+outfig <- outfig +
   annotate(geom = "rect",
            xmin = 0.4, xmax = 4.6,
            ymin = log10(cons_size95[1]),
            ymax = log10(cons_size95[2]),
            fill = 'gray', alpha = 0.2) + 
   scale_x_discrete(expand = c(0,0))
+outfig
+# save this
+ggsave(filename = "figs/lcl_vs_1hostmass_boxplot.png", width = 5, height = 4.5, units = "in")
 ```
 
 This plot suggests that only complex life cycle parasites have 1st hosts that are likely to consume parasite propagules.
