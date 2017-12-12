@@ -235,6 +235,34 @@ ggsave(filename = "figs/prop_to_1sthost_foodweb.png", width = 7, height = 5, uni
 ggsave(filename = "figs/prop_to_1sthost_foodweb.svg", width = 7, height = 5, units = "in")
 ```
 
+
+We can make finer distinctions between parasite life cycles. Instead of simple vs complex, let's try the life cycle groups: one-host, two-host, and three or more-hosts. The pattern is still distinguishable. Parasites with long life cycles tend to infect smaller first hosts. However, the differences between 2- and 3-host parasites is not obvious, so I would not prefer this plot over the simpler previous one.
+
+```{r message=FALSE, warning=FALSE}
+plot.dat <- mutate(plot.dat, lcl.cat = if_else(lcl == 1, "1 host", if_else(lcl == 2, "2 hosts", ">2 hosts")))
+reds <- brewer.pal(9, 'Reds')[c(3, 9, 6)]
+
+outfig <- ggplot(data = filter(plot.dat, trans.step=="food web"),
+                 aes(x = log10(res.mass), y = log10(cons.mass))) +
+  geom_point(color = "gray", alpha = 0.2) +
+  labs(x = "\nLog(resource/propagule mass)", y = "Log(consumer/host mass)\n") +
+  geom_point(data = filter(plot.dat, trans.step == "propagule to 1st host"), 
+             aes(x = log10(res.mass), y = log10(cons.mass), color = lcl.cat),
+             alpha = 0.5) +
+  scale_color_manual(values = reds) + guides(color=FALSE) +
+  annotate("text", x = 2.75, y = -3.25, label = "Food web trophic links",
+           size = 6, color = "darkgray") +
+  annotate("text", x = 2.75, y = -4.5, label = "Propagule to 1st host (1-host cycle)", 
+           size = 6, color = reds[2]) +
+  annotate("text", x = 2.5, y = -5.75, label = "Propagule to 1st host (2-host cycle)", 
+           size = 6, color = reds[3]) +
+  annotate("text", x = 2.75, y = -6.75, label = "Propagule to 1st host (>2-host cycle)", 
+           size = 6, color = reds[1]) +
+  scale_x_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3)) +
+  scale_y_continuous(limits = c(-8, 6), breaks = seq(from = -6, to = 6, by = 3))
+outfig
+```
+
 Now imagine that complex life cycle parasites skipped their first hosts, i.e. their propagules are consumed by the second hosts instead. How likely is this? When we make a similar plot to the previous one, we see there is much less overlap between parasite and food web data. This indicates that parasite propagules are usually too small to be considered a normal food item for the second hosts in a complex life cycle, and this indirectly supports the idea that transmission to the first host is higher than to the second host. Stated in another way, the first host reduces the mortality of the propagule.
 
 ```{r, message=FALSE, warning=FALSE}
@@ -305,6 +333,41 @@ outfig
 ggsave(filename = "figs/lcl_vs_1hostmass.png", width = 5, height = 4.5, units = "in")
 ```
 
+Maybe a boxplot is better than a scatterplot, given the limited range of values that life cycle length can take, so let's make one.
+
+```{r message=FALSE, warning=FALSE}
+lclvsprop <- mutate(lclvsprop, lcl.cat = if_else(lcl > 3, ">3", as.character(lcl)))%>%
+  mutate(lcl.cat = factor(lcl.cat, levels = c("1", "2", "3", ">3")))
+
+outfig <- ggplot(filter(lclvsprop, Host.no == 1),
+                 aes(y = log10(host.mass), x = lcl.cat)) +
+  geom_boxplot(outlier.color = "white", width = 0.9) +
+  geom_jitter(width = 0.2, color = "red", alpha = 0.2) +
+  labs(x = "Life cycle length", y = "1st host mass")
+outfig
+```
+
+This is clearer in my opinion. We can also try to integrate food web info onto this boxplot. Let's shade the area where propagule sizes overlap with the Brose food web data. We'll take the inner 95% quantiles to exclude odd parasite propagules and odd trophic links. Then we'll shade the plot to indicate which hosts seem likely to consume parasite propagules.
+
+```{r message=FALSE, warning=FALSE}
+prop_size95 <- quantile(dataL$biovolume, probs = c(0.025, 0.975)) # 95% quantile for propagule sizes
+# for trophic links with resources in the size range of parasite propagules, take the 95% quantile for consumers
+cons_size95 <- filter(brose, res.mass > prop_size95[1], res.mass < prop_size95[2])%>% 
+  select(cons.mass)
+cons_size95 <- quantile(cons_size95$cons.mass, probs = c(0.025, 0.95))
+
+# add a rectangle to the boxplot depicting where propagule consumption is realistic
+outfig +
+  annotate(geom = "rect",
+           xmin = 0.4, xmax = 4.6,
+           ymin = log10(cons_size95[1]),
+           ymax = log10(cons_size95[2]),
+           fill = 'gray', alpha = 0.2) + 
+  scale_x_discrete(expand = c(0,0))
+```
+
+This plot suggests that only complex life cycle parasites have 1st hosts that are likely to consume parasite propagules.
+
 Presumably, parasites adapt to their life cycles and hosts. Thus, although parasite propagules are consistently small, maybe their size correlates with the type of first host. For example, perhaps larger propagules are more likely to be eaten by bigger consumers. Consistent with this, there is a significant positive correlation between propagule mass and 1st host mass.
 
 ```{r, message=FALSE, warning=FALSE}
@@ -339,31 +402,5 @@ Less propagule size data is missing. Only 27% of species lack propagule size dat
 
 ```{r, message=FALSE, warning=FALSE}
 table(lclvsprop2$missing_propsize)
-```
-
-Here's maybe another way to present the main results. First, show that mass of the first host differs depending on whether parasites have a simple or complex life cycle. Also, show that the second hosts in a complex cycle are larger than the first host.
-
-```{r message=FALSE, warning=FALSE}
-lclvsprop3 <- filter(lclvsprop, Host.no < 3)%>%
-  mutate(cycle = if_else(lcl < 2, "simple", "complex"))%>%
-  mutate(cycle2 = if_else(cycle == 'simple', "1st host (simple)",
-                          if_else(Host.no == 1, "1st host (complex)", "2nd host (complex)")))
-
-ggplot(lclvsprop3, aes(x = cycle2, y = log10(host.mass))) + 
-  geom_boxplot(outlier.color = "white", width = 0.9) +
-  geom_jitter(width = 0.2, color = "red", alpha = 0.2) +
-  theme(axis.title.x = element_blank()) +
-  labs(y = "Log Host Mass (g)")
-```
-
-Also, need to show that propagule size does not differ between simple and complex life cycle parasites. These two graphs are arguably simpler, because they do not invoke food web data. However, that is also a weakness, as they still require background knowledge in ecology to interpret.
-
-```{r message=FALSE, warning=FALSE}
-ggplot(filter(lclvsprop3, Host.no == 1),
-       aes(x = cycle, y = log10(biovolume))) +
-  geom_boxplot(outlier.color = "white", width = 0.9) +
-  geom_jitter(width = 0.2, color = "red", alpha = 0.2) +
-  theme(axis.title.x = element_blank()) +
-  labs(y = "Log Propagule Mass (g)")
 ```
 
